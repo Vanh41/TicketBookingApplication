@@ -1,60 +1,44 @@
-# 1. Trình biên dịch và Cờ (Flags)
-CC = gcc
-# -Iinclude: Giúp trình biên dịch tìm file .h trong folder include/
-# -pthread: Hỗ trợ đa luồng (cho Server)
-# -Wall: Hiện tất cả cảnh báo (Warning) để dễ debug
-CFLAGS = -Wall -pthread -Iinclude
+CC ?= cc
+CFLAGS ?= -O2 -Wall -Wextra
+CPPFLAGS += -Iinclude
+BIN_DIR ?= bin
+PYTHON ?= python3
 
-# 2. Thư mục đầu ra
-BIN_DIR = bin
+BREW_PREFIX := $(if $(wildcard /opt/homebrew/include/json-c/json.h),/opt/homebrew)
+JSON_CFLAGS ?= $(shell pkg-config --cflags json-c 2>/dev/null || $(if $(BREW_PREFIX),echo -I$(BREW_PREFIX)/include))
+JSON_LIBS ?= $(shell pkg-config --libs json-c 2>/dev/null || echo $(if $(BREW_PREFIX),-L$(BREW_PREFIX)/lib) -ljson-c)
+CRYPTO_CFLAGS ?= $(shell pkg-config --cflags libcrypto 2>/dev/null || $(if $(BREW_PREFIX),echo -I$(BREW_PREFIX)/opt/openssl@3/include))
+CRYPTO_LIBS ?= $(shell pkg-config --libs libcrypto 2>/dev/null || echo $(if $(BREW_PREFIX),-L$(BREW_PREFIX)/opt/openssl@3/lib) -lcrypto)
 
-# 3. Danh sách các file nguồn (Source files)
-# Phần dùng chung (Common)
-COMMON_SRC = src/common/network.c \
-             src/common/db.c \
-             src/common/utils.c
+NETWORK = src/common/network.c src/common/ticket_protocol.c
+SERVER = src/server/main.c src/server/request_handler.c \
+         src/server/ticket_db.c src/server/ticket_auth.c \
+         src/server/ticket_catalog.c src/server/ticket_booking.c src/common/utils.c $(NETWORK)
+CLIENT = src/client/main.c src/client/ticket_cli.c $(NETWORK)
+HEADERS = $(wildcard include/*.h)
 
-# Phần Server (Bao gồm cả Common)
-SERVER_SRC = src/server/main.c \
-             src/server/request_handler.c \
-             src/server/session_mgr.c \
-             src/server/handle_auth.c \
-             src/server/handle_group.c \
-             src/server/handle_file.c \
-             $(COMMON_SRC)
+.PHONY: all server client clean run_server run_client test
+all: server client
+server: $(BIN_DIR)/server
+client: $(BIN_DIR)/client
 
-# Phần Client (Bao gồm cả Common)
-CLIENT_SRC = src/client/main.c \
-             src/client/client_net.c \
-             src/client/client_ui.c \
-             src/client/file_transfer.c \
-             $(COMMON_SRC)
+$(BIN_DIR):
+	mkdir -p "$@"
 
-# 4. Các mục tiêu (Targets)
-# Gõ 'make' sẽ chạy mục tiêu 'all'
-all: create_dirs server client
+$(BIN_DIR)/server: $(SERVER) $(HEADERS) src/server/ticket_server.h | $(BIN_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(JSON_CFLAGS) $(CRYPTO_CFLAGS) -pthread -o "$@" $(SERVER) $(JSON_LIBS) $(CRYPTO_LIBS) -lsqlite3
 
-# Compile Server
-server: $(SERVER_SRC)
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/server $(SERVER_SRC)
+$(BIN_DIR)/client: $(CLIENT) $(HEADERS) | $(BIN_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(JSON_CFLAGS) -o "$@" $(CLIENT) $(JSON_LIBS)
 
-# Compile Client
-client: $(CLIENT_SRC)
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/client $(CLIENT_SRC)
+test: all
+	TICKET_TEST_BIN="$(abspath $(BIN_DIR))" $(PYTHON) tests/ticket_booking_test.py
 
-# Tạo thư mục bin nếu chưa có
-create_dirs:
-	mkdir -p $(BIN_DIR)
-	mkdir -p data/files
-
-# Dọn dẹp file biên dịch cũ (Gõ 'make clean')
-clean:
-	rm -rf $(BIN_DIR)
-
-# Chạy thử Server nhanh (Gõ 'make run_server')
 run_server: server
-	./$(BIN_DIR)/server
+	"$(abspath $(BIN_DIR))/server"
 
-# Chạy thử Client nhanh (Gõ 'make run_client')
 run_client: client
-	./$(BIN_DIR)/client 127.0.0.1 3636
+	"$(abspath $(BIN_DIR))/client" 127.0.0.1 3636
+
+clean:
+	rm -rf "$(BIN_DIR)"

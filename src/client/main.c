@@ -1,15 +1,17 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
-#include "common.h"
-#include "network.h"
 #include "client.h"
 
 int main(int argc, char *argv[])
 {
+    signal(SIGPIPE, SIG_IGN);
+
     // 1. Validate command-line arguments
     if (argc != 3)
     {
@@ -19,19 +21,17 @@ int main(int argc, char *argv[])
     }
 
     char *server_ip = argv[1];
-    int port = atoi(argv[2]);
+    char *end;
+    long port = strtol(argv[2], &end, 10);
 
     // Validate port range
-    if (port <= 0 || port > 65535)
+    if (*end || port <= 0 || port > 65535)
     {
         fprintf(stderr, "Error: Invalid port number '%s'. Must be between 1-65535.\n", argv[2]);
         return EXIT_FAILURE;
     }
 
-    // printf("╔════════════════════════════════════╗\n");
-    // printf("║   FILE SHARING CLIENT v1.0         ║\n");
-    // printf("╚════════════════════════════════════╝\n");
-    printf("Connecting to %s:%d ...\n", server_ip, port);
+    printf("Connecting to %s:%ld ...\n", server_ip, port);
 
     // 2. Create TCP socket
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
         perror("Connection failed");
-        fprintf(stderr, "Could not connect to %s:%d\n", server_ip, port);
+        fprintf(stderr, "Could not connect to %s:%ld\n", server_ip, port);
         fprintf(stderr, "Please ensure the server is running.\n");
         close(sockfd);
         return EXIT_FAILURE;
@@ -68,12 +68,11 @@ int main(int argc, char *argv[])
     printf("✓ Connected to server successfully!\n");
     printf("═══════════════════════════════════════\n\n");
 
-    // 5. Enter main client loop (handles I/O with select())
-    // This function is defined in client_net.c
-    client_main_loop(sockfd);
-
-    // 6. Cleanup (only reached when user types EXIT)
+    int status = client_main_loop(sockfd);
     close(sockfd);
+    if (status != 0)
+        return EXIT_FAILURE;
+
     printf("\nConnection closed. Goodbye!\n");
 
     return EXIT_SUCCESS;

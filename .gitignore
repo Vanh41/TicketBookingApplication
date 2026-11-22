@@ -4,6 +4,7 @@
 # Ignore directories containing compiled binaries and object files
 bin/
 obj/
+__pycache__/
 
 # Ignore object files and dependency files anywhere in the project
 *.o
@@ -30,19 +31,14 @@ test.zip
 # ------------------------------------------------
 # 3. Runtime Data & Logs
 # ------------------------------------------------
-# Ignore all runtime data (databases, uploaded files)
+# Ignore runtime databases and server data
 data/*
 
 # EXCEPTION: Keep the .keep file so the 'data' folder structure is committed
 !data/.keep
 
-# Specific rule for file storage folder
-data/files/*
-!data/files/.keep
-
 # Ignore log files generated during runtime
 *.log
-src/*.log
 
 # ------------------------------------------------
 # 4. Editor & OS Configuration
