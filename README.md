@@ -115,12 +115,12 @@ Ví dụ dòng JSON do CLI gửi khi Buyer đã xem sơ đồ của suất #2. K
 
 ### Các module nghiệp vụ và dữ liệu
 
-| Module | Khi nào đọc |
-| --- | --- |
-| [`ticket_auth.c`](src/server/ticket_auth.c) | Muốn theo dõi `register`, `login`, `logout`, tạo tài khoản và đổi quyền. Mật khẩu được băm với salt riêng. Login gắn `user_id` vào phiên, logout đặt lại về 0. |
-| [`ticket_catalog.c`](src/server/ticket_catalog.c) | Muốn theo dõi tìm phim, bộ lọc, danh sách phòng, thêm phim và xếp lịch. Lịch được kiểm tra theo thời lượng phim trước khi công bố hoặc cập nhật. |
-| [`ticket_booking.c`](src/server/ticket_booking.c) | Muốn hiểu cách dựng sơ đồ ghế, từ chối ghế ngoài phòng hay đã đặt, và rollback cả lượt khi một ghế lỗi. |
-| [`ticket_db.c`](src/server/ticket_db.c) | Muốn xem bảng SQLite, dữ liệu phòng mẫu, hàm kiểm tra ngày giờ và cách commit hoặc rollback giao dịch. |
+| Module                                             | Khi nào đọc                                                                                                                                                                                 |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ticket_auth.c`](src/server/ticket_auth.c)       | Muốn theo dõi `register`, `login`, `logout`, tạo tài khoản và đổi quyền. Mật khẩu được băm với salt riêng. Login gắn `user_id` vào phiên, logout đặt lại về 0. |
+| [`ticket_catalog.c`](src/server/ticket_catalog.c) | Muốn theo dõi tìm phim, bộ lọc, danh sách phòng, thêm phim và xếp lịch. Lịch được kiểm tra theo thời lượng phim trước khi công bố hoặc cập nhật.                     |
+| [`ticket_booking.c`](src/server/ticket_booking.c) | Muốn hiểu cách dựng sơ đồ ghế, từ chối ghế ngoài phòng hay đã đặt, và rollback cả lượt khi một ghế lỗi.                                                                |
+| [`ticket_db.c`](src/server/ticket_db.c)           | Muốn xem bảng SQLite, dữ liệu phòng mẫu, hàm kiểm tra ngày giờ và cách commit hoặc rollback giao dịch.                                                                           |
 
 Một dòng `showings` nối phim với phòng và giờ. Phòng thuộc một rạp. `bookings` nối Buyer với suất chiếu, còn `booked_seats` chứa từng ghế của booking. Khóa `(showing_id, seat)` bảo đảm A1 chỉ có một người đặt trong một suất. A1 của suất khác là một ghế có thể đặt riêng.
 
