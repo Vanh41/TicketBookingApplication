@@ -2,6 +2,16 @@
 
 Ứng dụng đặt vé xem phim của môn IT4062. Client dòng lệnh gửi yêu cầu qua TCP đến server C đa luồng. Server lưu tài khoản, phim, suất chiếu và vé trong SQLite.
 
+## Tài liệu dự án
+
+| Bạn muốn | Đọc |
+| --- | --- |
+| Build, chạy và demo bằng ba vai trò | [Cài đặt và chạy](#cài-đặt-và-chạy) · [Luồng demo](#luồng-demo) |
+| Hiểu đường đi của một yêu cầu và trách nhiệm của từng file C | [Kiến trúc và cách đọc mã nguồn](docs/ARCHITECTURE.md) |
+| Tra cú pháp CLI, payload JSON, quyền và mã lỗi | [Giao thức TCP và lệnh CLI](docs/PROTOCOL.md) |
+| Hiểu race condition, các trường hợp còn mở và cách kiểm tra | [Xử lý đồng thời, tình huống biên và kiểm thử](docs/RELIABILITY.md) |
+| Chạy demo với dữ liệu riêng hoặc đối chiếu rubric | [Bảng ca kiểm thử](tests/TEST_CASES.md) |
+
 ## Cài đặt và chạy
 
 Cần trình biên dịch C, Make, json-c, SQLite và OpenSSL. Trên macOS, Command Line Tools cung cấp SQLite. Nếu thiếu thư viện, chạy dòng phù hợp với máy.
@@ -73,7 +83,7 @@ seats 2
 exit
 ```
 
-Các bộ lọc của `browse` có thể dùng riêng hoặc kết hợp. Sơ đồ hiển thị mã của ghế trống và `XX` cho ghế đã đặt. Một yêu cầu đặt được 1–10 ghế. Nếu một ghế đã có người đặt, giao dịch hủy toàn bộ lựa chọn và client có thể mở lại sơ đồ để chọn ghế khác. Nếu quản lý đổi phòng hoặc giờ sau khi mở sơ đồ, client sẽ yêu cầu mở lại sơ đồ trước khi đặt.
+Các bộ lọc của `browse` có thể dùng riêng hoặc kết hợp. Sơ đồ hiển thị mã của ghế trống và `XX` cho ghế đã đặt. Một yêu cầu đặt được 1–10 ghế. Nếu một ghế đã có người đặt, giao dịch hủy toàn bộ lựa chọn và người dùng có thể mở lại sơ đồ để chọn ghế khác. Khi phòng hoặc giờ đã khác sơ đồ vừa xem, server trả `SHOWING_CHANGED` và CLI hiển thị yêu cầu mở lại sơ đồ.
 
 Đặt thành công sẽ thấy `Booking #1 confirmed.` trên dữ liệu demo mới. Sau đó `seats 2` hiện `XX` tại A1 và A2. Để quan sát hai chiều gửi nhận, mở một terminal khác từ thư mục đã chạy server.
 
@@ -134,7 +144,7 @@ Một dòng `showings` nối phim với phòng và giờ. Phòng thuộc một r
 
 ## Giao thức và lưu trữ
 
-- Mỗi yêu cầu và phản hồi là một đối tượng JSON UTF-8 kết thúc bằng LF, tối đa 4096 byte tính cả LF. Server phản hồi với cùng `id` và trạng thái `OK` hoặc `ERROR`.
+- Mỗi yêu cầu và phản hồi là một đối tượng JSON UTF-8 kết thúc bằng LF, tối đa 4096 byte tính cả LF. Server trả trạng thái `OK` hoặc `ERROR` và phản hồi cùng `id` nếu đã đọc được ID hợp lệ. Lỗi không có ID hợp lệ và lỗi dòng quá dài trả `id: null`.
 - `SEARCH_MOVIES`, `BROWSE_MOVIES`, `GET_SHOWINGS` và `LIST_THEATERS` hỗ trợ `after_id`. Dùng `next_after_id` trong phản hồi để lấy trang tiếp theo.
 - `data/server.log` ghi `RECV` và `SEND`, với giá trị trường mật khẩu được che. SQLite lưu dữ liệu trong `data/tickets.sqlite3`. Mật khẩu được băm bằng PBKDF2-HMAC-SHA-256 với salt riêng.
 - `GET_SEATS` trả thêm thông tin `showing` gồm phòng và giờ chiếu. CLI gửi lại thông tin đó qua `expected_showing` trong `BOOK_TICKETS`. Server trả `SHOWING_CHANGED` nếu phòng hoặc giờ đã đổi. Trường này là tùy chọn đối với client gửi request trực tiếp.

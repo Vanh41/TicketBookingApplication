@@ -17,6 +17,8 @@ File `main.c` mở socket lắng nghe và tạo một luồng cho mỗi kết n�
 
 ## Kiểm thử tự động
 
+Xem [xử lý đồng thời và tình huống biên](../docs/RELIABILITY.md) để lần theo hàm C đứng sau mỗi ca, đọc log và phân biệt các hành vi đã được kiểm thử với các trường hợp còn mở.
+
 Chạy từ thư mục dự án với Python 3, trình biên dịch C và các thư viện trong [README](../README.md).
 
 ```bash
@@ -255,7 +257,7 @@ Ví dụ đặt hai ghế theo định dạng request của slide. Gửi mỗi o
 | 29 | Mở hai sơ đồ trống 6×10 và 4×8, đặt ghế cuối từng phòng rồi mở lại. | Mỗi sơ đồ có đúng kích thước và chỉ ghế đã đặt của suất tương ứng. |
 | 30 | Thử mảng ghế rỗng, quá 10 ghế, trùng nhãn, nhãn sai, ngoài sơ đồ, ID suất sai và suất không tồn tại. | Trả `INVALID_REQUEST` hoặc `NOT_FOUND`. Không phát sinh bản ghi đặt vé hoặc ghế. |
 | 31 | Đặt 10 ghế trong suất đầu và đặt lại A1 của suất khác trong cùng phòng. | Hai mã đặt chỗ khác nhau, đúng tài khoản, đúng suất. Ghế chỉ bị khóa trong suất đã đặt. |
-| 32 | Đặt A2. Client khác yêu cầu A1, A2, A3, rồi thử lại A1 và A3. Gửi lại yêu cầu đã thành công. | Lần đầu trả `SEAT_UNAVAILABLE` và rollback A1, A3. Lần thử lại thành công. Gửi lại yêu cầu thành công không tạo thêm lượt đặt. |
+| 32 | Đặt A2. Client khác yêu cầu A1, A2, A3, rồi thử lại A1 và A3. Gửi lại yêu cầu đã thành công. | Lần đầu trả `SEAT_UNAVAILABLE`. A1 được rollback, A3 chưa được ghi. Lần thử lại A1 và A3 thành công. Gửi lại hai ghế đó trả `SEAT_UNAVAILABLE` và không tạo thêm lượt đặt. |
 | 33 | Hai client đồng thời yêu cầu A1/A2 và A3/A2. Sau đó mỗi client đặt một ghế khác nhau. | Yêu cầu chồng ghế chỉ có một bên thành công. Hai yêu cầu tách ghế cùng thành công. Số booking và ghế khớp. |
 | 34 | Xem sơ đồ, đổi lịch, đặt bằng thông tin suất cũ, rồi mở lại sơ đồ. Thử client gửi snapshot sai định dạng. | Snapshot cũ trả `SHOWING_CHANGED` và không tạo booking. Snapshot sai trả `INVALID_REQUEST`. Snapshot mới đặt được. |
 | 35 | Buyer đặt ghế từ sơ đồ hiện tại đúng lúc Manager đổi phòng của cùng suất. | Nếu đặt trước thì đổi phòng trả `SHOWING_HAS_BOOKINGS`. Nếu đổi phòng trước thì đặt trả `SHOWING_CHANGED`. SQLite phản ánh đúng giao dịch thắng. |
